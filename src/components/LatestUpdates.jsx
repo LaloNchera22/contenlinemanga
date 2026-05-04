@@ -61,8 +61,8 @@ export default function LatestUpdates() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('mangas').select('*').order('rank', { ascending: true }).limit(6),
-      supabase.from('mangas').select('*').eq('is_trending', true).order('rank', { ascending: true }).limit(4),
+      supabase.from('mangas').select('id, title, cover_url, rank, genre, is_trending').order('rank', { ascending: true }).limit(6),
+      supabase.from('mangas').select('id, title, cover_url, rank, genre, is_trending').eq('is_trending', true).order('rank', { ascending: true }).limit(4),
     ]).then(([{ data: updatesData }, { data: trendingData }]) => {
       setUpdates(updatesData || []);
       setTrending(trendingData || []);

@@ -76,3 +76,20 @@ body {
     display: none;
   }
 }
+
+/* Neural Scanner animation — horizontal line sweeps the image during AI processing */
+@keyframes neural-scan {
+  0%   { top: 0%; opacity: 1; }
+  95%  { top: 100%; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.neural-scanner-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #7c3aed, #a78bfa, #7c3aed, transparent);
+  box-shadow: 0 0 12px 4px rgba(124, 58, 237, 0.6);
+  animation: neural-scan 2s ease-in-out infinite;
+}
