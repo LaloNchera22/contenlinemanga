@@ -3,6 +3,7 @@ import {
   Upload, X, Languages, Copy, Check, AlertCircle,
   Loader2, FileImage, ChevronDown, Scan, Info,
 } from 'lucide-react';
+import { geminiModel } from '../lib/gemini';
 
 const LANGUAGES = [
   { code: 'es', label: 'Español' },
@@ -41,7 +42,7 @@ function fileToBase64(file) {
   });
 }
 
-async function callGemini(imageBase64, mimeType, targetLanguageLabel, apiKey) {
+async function callGemini(imageBase64, mimeType, targetLanguageLabel) {
   const prompt = `Analiza esta página de manga y realiza las siguientes tareas:
 
 1. Extrae TODO el texto visible: diálogos en globos de texto, narración en cajas, onomatopeyas, títulos, carteles, etc.
@@ -63,30 +64,12 @@ Responde ÚNICAMENTE con JSON válido con esta estructura:
 
 Si no hay texto visible devuelve: {"textos": [], "descripcion": "Página sin texto detectable"}`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: mimeType, data: imageBase64 } },
-            { text: prompt },
-          ],
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    }
-  );
+  const result = await geminiModel.generateContent([
+    { inlineData: { mimeType, data: imageBase64 } },
+    { text: prompt },
+  ]);
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Error HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = result.response.text();
   if (!text) throw new Error('La API no devolvió contenido');
 
   const match = text.match(/\{[\s\S]*\}/);
@@ -107,6 +90,16 @@ function CopyButton({ text, id, copiedId, onCopy }) {
         ? <Check className="w-3.5 h-3.5 text-green-400" />
         : <Copy className="w-3.5 h-3.5" />}
     </button>
+  );
+}
+
+/* Neural Scanner — horizontal line that sweeps the image during loading */
+function NeuralScanner() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
+      <div className="neural-scanner-line" />
+      <div className="absolute inset-0 bg-manga-purple/5" />
+    </div>
   );
 }
 
@@ -146,13 +139,16 @@ function PageCard({ page, result, isLoading, onRemove, onTranslate, onCopy, copi
 
       {/* Body */}
       <div className="grid md:grid-cols-2">
-        {/* Original image */}
+        {/* Original image with Neural Scanner overlay */}
         <div className="p-4 border-b md:border-b-0 md:border-r border-manga-border flex items-start justify-center">
-          <img
-            src={page.url}
-            alt={page.name}
-            className="max-h-[480px] w-full object-contain rounded-xl bg-black/40"
-          />
+          <div className="relative w-full">
+            <img
+              src={page.url}
+              alt={page.name}
+              className="max-h-[480px] w-full object-contain rounded-xl bg-black/40"
+            />
+            {isLoading && <NeuralScanner />}
+          </div>
         </div>
 
         {/* Translation panel */}
@@ -169,6 +165,16 @@ function PageCard({ page, result, isLoading, onRemove, onTranslate, onCopy, copi
                 <p className="text-white text-sm font-medium mb-1">Analizando con Gemini AI</p>
                 <p className="text-manga-muted text-xs">Extrayendo y traduciendo texto...</p>
               </div>
+              {/* Pulse bars */}
+              <div className="flex items-end gap-1 h-8">
+                {[0.4, 0.7, 1, 0.6, 0.9, 0.5, 0.8].map((h, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 bg-manga-purple rounded-full animate-pulse"
+                    style={{ height: `${h * 100}%`, animationDelay: `${i * 0.1}s` }}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
@@ -183,7 +189,6 @@ function PageCard({ page, result, isLoading, onRemove, onTranslate, onCopy, copi
 
           {result && (
             <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
-              {/* Scene description */}
               {result.descripcion && (
                 <div className="flex items-start gap-2.5 bg-manga-bg border border-manga-border rounded-xl p-3">
                   <Info className="w-4 h-4 text-manga-muted flex-shrink-0 mt-0.5" />
@@ -248,8 +253,6 @@ function PageCard({ page, result, isLoading, onRemove, onTranslate, onCopy, copi
 export default function MangaTranslator() {
   const [pages, setPages] = useState([]);
   const [targetLang, setTargetLang] = useState('es');
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState({});
   const [errors, setErrors] = useState({});
@@ -282,9 +285,8 @@ export default function MangaTranslator() {
   }
 
   async function translatePage(page) {
-    const key = apiKey.trim() || import.meta.env.VITE_GEMINI_API_KEY;
-    if (!key) {
-      setErrors((prev) => ({ ...prev, [page.id]: 'Ingresa tu API Key de Gemini en la configuración.' }));
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+      setErrors((prev) => ({ ...prev, [page.id]: 'Define VITE_GEMINI_API_KEY en tu archivo .env para usar el traductor.' }));
       return;
     }
 
@@ -294,7 +296,7 @@ export default function MangaTranslator() {
     try {
       const base64 = await fileToBase64(page.file);
       const langLabel = LANGUAGES.find((l) => l.code === targetLang)?.label ?? targetLang;
-      const result = await callGemini(base64, page.file.type, langLabel, key);
+      const result = await callGemini(base64, page.file.type, langLabel);
       setResults((prev) => ({ ...prev, [page.id]: result }));
     } catch (err) {
       setErrors((prev) => ({ ...prev, [page.id]: err.message }));
@@ -340,63 +342,34 @@ export default function MangaTranslator() {
           </p>
         </div>
 
-        {/* Config panel */}
+        {/* Config panel — language only; API key via env var */}
         <div className="bg-manga-card border border-manga-border rounded-2xl p-5 mb-6">
           <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
             <Languages className="w-4 h-4 text-manga-purple" />
             Configuración
           </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* API key input */}
-            <div>
-              <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide">
-                API Key de Gemini
-              </label>
-              <div className="relative">
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="AIza… (o define VITE_GEMINI_API_KEY)"
-                  className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 text-sm text-manga-text outline-none transition-colors pr-16"
-                />
-                <button
-                  onClick={() => setShowApiKey((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-manga-muted hover:text-white transition-colors"
-                >
-                  {showApiKey ? 'Ocultar' : 'Mostrar'}
-                </button>
-              </div>
-              <p className="text-xs text-manga-muted mt-1.5">
-                Consigue tu key gratuita en{' '}
-                <span className="text-manga-purple">aistudio.google.com</span>
-              </p>
-            </div>
-
-            {/* Language selector */}
-            <div>
-              <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide">
-                Idioma de destino
-              </label>
-              <div className="relative">
-                <select
-                  value={targetLang}
-                  onChange={(e) => setTargetLang(e.target.value)}
-                  className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 text-sm text-manga-text outline-none transition-colors appearance-none cursor-pointer"
-                >
-                  {LANGUAGES.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-manga-muted pointer-events-none" />
-              </div>
+          <div className="max-w-xs">
+            <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide">
+              Idioma de destino
+            </label>
+            <div className="relative">
+              <select
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+                className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 text-sm text-manga-text outline-none transition-colors appearance-none cursor-pointer"
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-manga-muted pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Global error (no API key) */}
+        {/* Errors */}
         {Object.entries(errors).map(([id, msg]) => (
           !results[id] && (
             <div key={id} className="flex items-start gap-3 bg-red-900/20 border border-manga-red/40 text-manga-red rounded-xl p-4 mb-4 text-sm">
@@ -489,7 +462,6 @@ export default function MangaTranslator() {
           </>
         )}
 
-        {/* Empty state */}
         {pages.length === 0 && (
           <div className="text-center py-6">
             <p className="text-manga-muted text-sm">

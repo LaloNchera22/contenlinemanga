@@ -12,7 +12,7 @@ export default function MangaDetail() {
   useEffect(() => {
     supabase
       .from('mangas')
-      .select('*')
+      .select('id, title, cover_url, genre, rank, is_trending, description')
       .eq('id', id)
       .single()
       .then(({ data, error }) => {
@@ -27,10 +27,10 @@ export default function MangaDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-16 flex items-center justify-center">
+      <div className="min-h-screen bg-white pt-16 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-manga-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-manga-muted text-sm">Cargando manga...</p>
+          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-black text-xs font-mono uppercase tracking-widest">Cargando...</p>
         </div>
       </div>
     );
@@ -38,14 +38,14 @@ export default function MangaDetail() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-6xl font-black text-manga-red mb-4">404</p>
-          <p className="text-white font-bold text-xl mb-2">Manga no encontrado</p>
-          <p className="text-manga-muted text-sm mb-6">Este manga no existe o fue eliminado.</p>
+      <div className="min-h-screen bg-white pt-16 flex items-center justify-center">
+        <div className="border border-black p-12 text-center max-w-sm mx-4">
+          <p className="text-6xl font-black text-black mb-4">404</p>
+          <p className="font-bold text-black text-lg mb-1 uppercase tracking-tight">Manga no encontrado</p>
+          <p className="text-gray-500 text-sm mb-8">Este manga no existe o fue eliminado.</p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 bg-manga-red hover:bg-red-600 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 border border-black bg-black text-white text-sm font-bold px-6 py-3 hover:bg-white hover:text-black transition-colors uppercase tracking-wide"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio
@@ -56,42 +56,35 @@ export default function MangaDetail() {
   }
 
   return (
-    <div className="min-h-screen pt-16">
-      {/* Hero banner */}
-      <div className="relative h-64 sm:h-80 overflow-hidden">
-        <img
-          src={manga.cover_url || `https://picsum.photos/seed/${manga.id}/1200/400`}
-          alt={manga.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-manga-bg via-manga-bg/60 to-transparent" />
-
-        {/* Glow accents */}
-        <div className="hero-glow w-64 h-64 bg-manga-red -top-10 -right-10 opacity-30" style={{ position: 'absolute' }} />
-        <div className="hero-glow w-48 h-48 bg-manga-purple bottom-0 left-1/4 opacity-20" style={{ position: 'absolute' }} />
+    <div className="min-h-screen bg-white pt-16">
+      {/* Brutalist header strip */}
+      <div className="border-b border-black bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-black text-xs font-bold uppercase tracking-widest hover:underline group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+            Volver
+          </Link>
+          <span className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MANGA/{id}
+          </span>
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative pb-20">
-        {/* Back link */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-manga-muted hover:text-white text-sm font-semibold mb-6 transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Volver
-        </Link>
-
-        <div className="flex flex-col sm:flex-row gap-8">
-          {/* Cover */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col sm:flex-row gap-10">
+          {/* Cover — grayscale by default, full color on hover */}
           <div className="flex-shrink-0">
-            <div className="relative w-40 sm:w-52">
+            <div className="relative w-40 sm:w-52 border border-black">
               <img
                 src={manga.cover_url || `https://picsum.photos/seed/${manga.id}/200/280`}
                 alt={manga.title}
-                className="w-full rounded-2xl shadow-2xl border-2 border-manga-border"
+                className="w-full block grayscale hover:grayscale-0 transition-all duration-500"
               />
               {manga.is_trending && (
-                <div className="absolute -top-3 -right-3 bg-orange-500 text-white text-xs font-black px-2 py-1 rounded-lg flex items-center gap-1">
+                <div className="absolute top-0 right-0 bg-black text-white text-xs font-black px-2 py-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   HOT
                 </div>
@@ -102,46 +95,48 @@ export default function MangaDetail() {
           {/* Info */}
           <div className="flex-1 min-w-0">
             {/* Genre badge */}
-            <span className="inline-block bg-manga-red/20 text-manga-red text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider">
+            <span className="inline-block border border-black text-black text-xs font-bold px-3 py-1 uppercase tracking-widest mb-4">
               {manga.genre}
             </span>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-4 break-words">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-black leading-none mb-6 break-words uppercase">
               {manga.title}
             </h1>
 
             {/* Stats row */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-1.5 bg-manga-card border border-manga-border rounded-lg px-3 py-1.5">
-                <Hash className="w-4 h-4 text-manga-red" />
-                <span className="text-white text-sm font-bold">Rank {manga.rank}</span>
+            <div className="flex items-center gap-3 mb-8 flex-wrap">
+              <div className="flex items-center gap-1.5 border border-black px-3 py-1.5">
+                <Hash className="w-3.5 h-3.5 text-black" />
+                <span className="text-black text-xs font-bold uppercase tracking-wide">Rank {manga.rank}</span>
               </div>
               {manga.is_trending && (
-                <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-1.5">
-                  <TrendingUp className="w-4 h-4 text-orange-400" />
-                  <span className="text-orange-400 text-sm font-bold">Trending</span>
+                <div className="flex items-center gap-1.5 border border-black px-3 py-1.5 bg-black">
+                  <TrendingUp className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs font-bold uppercase tracking-wide">Trending</span>
                 </div>
               )}
             </div>
 
             {/* Divider */}
-            <div className="w-12 h-1 bg-manga-red rounded-full mb-4" />
+            <div className="w-full h-px bg-black mb-6" />
 
             {/* Description */}
-            <div className="bg-manga-card border border-manga-border rounded-2xl p-5">
-              <h2 className="text-xs font-black text-manga-muted uppercase tracking-widest mb-3">Sinopsis</h2>
-              <p className="text-manga-text text-sm leading-relaxed">
+            <div className="border border-black p-5 mb-8">
+              <h2 className="text-xs font-black text-black uppercase tracking-widest mb-3 border-b border-black pb-2">
+                Sinopsis
+              </h2>
+              <p className="text-gray-700 text-sm leading-relaxed font-mono">
                 {manga.description || 'No hay descripción disponible para este manga.'}
               </p>
             </div>
 
             {/* CTA */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <button className="flex-1 bg-manga-red hover:bg-red-600 text-white font-black py-3.5 rounded-xl transition-all shadow-lg shadow-red-900/30 hover:shadow-red-900/50 tracking-wide">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button className="flex-1 bg-black hover:bg-white text-white hover:text-black border border-black font-black py-3.5 text-sm uppercase tracking-widest transition-colors">
                 LEER AHORA
               </button>
-              <button className="flex-1 bg-manga-card hover:bg-manga-border text-white font-bold py-3.5 rounded-xl transition-all border border-manga-border tracking-wide">
+              <button className="flex-1 bg-white hover:bg-black text-black hover:text-white border border-black font-bold py-3.5 text-sm uppercase tracking-widest transition-colors">
                 + AÑADIR A LISTA
               </button>
             </div>

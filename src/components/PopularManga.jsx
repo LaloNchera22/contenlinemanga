@@ -65,7 +65,7 @@ export default function PopularManga() {
   useEffect(() => {
     supabase
       .from('mangas')
-      .select('*')
+      .select('id, title, cover_url, rank, genre, is_trending')
       .order('rank', { ascending: true })
       .limit(8)
       .then(({ data }) => {
