@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import MangaDetail from './pages/MangaDetail';
+import MangaTranslator from './pages/MangaTranslator';
 import Footer from './components/Footer';
 import './index.css';
 
@@ -14,6 +15,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/manga/:id" element={<MangaDetail />} />
+            <Route path="/traductor" element={<MangaTranslator />} />
           </Routes>
         </main>
         <Footer />
