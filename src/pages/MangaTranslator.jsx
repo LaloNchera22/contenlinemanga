@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Upload, X, Languages, Copy, Check, AlertCircle,
-  Loader2, FileImage, ChevronDown, Scan, Info,
+  Loader2, FileImage, ChevronDown, Scan, Info, Key, Eye, EyeOff,
 } from 'lucide-react';
-import { geminiModel } from '../lib/gemini';
+import { getGeminiModel, getGeminiApiKey } from '../lib/gemini';
 
 const LANGUAGES = [
   { code: 'es', label: 'Español' },
@@ -43,6 +43,9 @@ function fileToBase64(file) {
 }
 
 async function callGemini(imageBase64, mimeType, targetLanguageLabel) {
+  const model = getGeminiModel();
+  if (!model) throw new Error('Configura tu API key de Gemini para usar el traductor.');
+
   const prompt = `Analiza esta página de manga y realiza las siguientes tareas:
 
 1. Extrae TODO el texto visible: diálogos en globos de texto, narración en cajas, onomatopeyas, títulos, carteles, etc.
@@ -64,7 +67,7 @@ Responde ÚNICAMENTE con JSON válido con esta estructura:
 
 Si no hay texto visible devuelve: {"textos": [], "descripcion": "Página sin texto detectable"}`;
 
-  const result = await geminiModel.generateContent([
+  const result = await model.generateContent([
     { inlineData: { mimeType, data: imageBase64 } },
     { text: prompt },
   ]);
@@ -258,7 +261,21 @@ export default function MangaTranslator() {
   const [errors, setErrors] = useState({});
   const [dragOver, setDragOver] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [geminiKey, setGeminiKey] = useState(() => getGeminiApiKey());
+  const [showKey, setShowKey] = useState(false);
+  const [keySaved, setKeySaved] = useState(false);
   const fileInputRef = useRef(null);
+
+  function saveGeminiKey() {
+    const trimmed = geminiKey.trim();
+    if (trimmed) {
+      localStorage.setItem('gemini_api_key', trimmed);
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 2500);
+  }
 
   const addFiles = useCallback((files) => {
     const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -285,8 +302,8 @@ export default function MangaTranslator() {
   }
 
   async function translatePage(page) {
-    if (!import.meta.env.VITE_GEMINI_API_KEY) {
-      setErrors((prev) => ({ ...prev, [page.id]: 'Define VITE_GEMINI_API_KEY en tu archivo .env para usar el traductor.' }));
+    if (!getGeminiApiKey()) {
+      setErrors((prev) => ({ ...prev, [page.id]: 'Introduce tu API key de Gemini en la sección de configuración para usar el traductor.' }));
       return;
     }
 
@@ -342,29 +359,88 @@ export default function MangaTranslator() {
           </p>
         </div>
 
-        {/* Config panel — language only; API key via env var */}
+        {/* Config panel */}
         <div className="bg-manga-card border border-manga-border rounded-2xl p-5 mb-6">
           <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
             <Languages className="w-4 h-4 text-manga-purple" />
             Configuración
           </h2>
-          <div className="max-w-xs">
-            <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide">
-              Idioma de destino
-            </label>
-            <div className="relative">
-              <select
-                value={targetLang}
-                onChange={(e) => setTargetLang(e.target.value)}
-                className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 text-sm text-manga-text outline-none transition-colors appearance-none cursor-pointer"
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-manga-muted pointer-events-none" />
+          <div className="grid sm:grid-cols-2 gap-5">
+            {/* Language selector */}
+            <div>
+              <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide">
+                Idioma de destino
+              </label>
+              <div className="relative">
+                <select
+                  value={targetLang}
+                  onChange={(e) => setTargetLang(e.target.value)}
+                  className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 text-sm text-manga-text outline-none transition-colors appearance-none cursor-pointer"
+                >
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-manga-muted pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Gemini API Key */}
+            <div>
+              <label className="text-xs text-manga-muted mb-1.5 block font-medium uppercase tracking-wide flex items-center gap-1.5">
+                <Key className="w-3 h-3" />
+                API Key de Gemini
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-manga-purple hover:underline normal-case font-normal ml-1"
+                >
+                  (Obtener key)
+                </a>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                    placeholder="AIza..."
+                    className="w-full bg-manga-bg border border-manga-border focus:border-manga-purple rounded-xl px-3 py-2.5 pr-9 text-sm text-manga-text placeholder-manga-muted/50 outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-manga-muted hover:text-white transition-colors"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <button
+                  onClick={saveGeminiKey}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    keySaved
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                      : 'bg-manga-purple/20 hover:bg-manga-purple/30 text-manga-purple border border-manga-purple/30'
+                  }`}
+                >
+                  {keySaved ? <Check className="w-4 h-4" /> : 'Guardar'}
+                </button>
+              </div>
+              {!getGeminiApiKey() && (
+                <p className="text-xs text-manga-red/80 mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                  Necesitas una API key para traducir
+                </p>
+              )}
+              {getGeminiApiKey() && (
+                <p className="text-xs text-green-400/80 mt-1.5 flex items-center gap-1">
+                  <Check className="w-3 h-3 flex-shrink-0" />
+                  API key configurada
+                </p>
+              )}
             </div>
           </div>
         </div>

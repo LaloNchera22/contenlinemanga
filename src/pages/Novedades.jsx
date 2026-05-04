@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import DbConfigBanner from '../components/DbConfigBanner';
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -53,6 +54,7 @@ export default function Novedades() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DbConfigBanner />
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="w-8 h-8 border-2 border-manga-red border-t-transparent rounded-full animate-spin" />
