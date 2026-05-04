@@ -13,10 +13,10 @@ export default function Navbar() {
 
   const links = [
     { label: 'Inicio', href: '/' },
-    { label: 'Explorar', href: '#explorar' },
-    { label: 'Popular', href: '#popular' },
-    { label: 'Géneros', href: '#generos' },
-    { label: 'Novedades', href: '#novedades' },
+    { label: 'Explorar', href: '/explorar' },
+    { label: 'Popular', href: '/popular' },
+    { label: 'Géneros', href: '/generos' },
+    { label: 'Novedades', href: '/novedades' },
   ];
 
   useEffect(() => {
@@ -99,13 +99,13 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
             {links.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                href={link.href}
+                to={link.href}
                 className="text-sm text-manga-muted hover:text-white transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -152,15 +152,15 @@ export default function Navbar() {
             <button className="p-2 text-manga-muted hover:text-white transition-colors">
               <Bell className="w-5 h-5" />
             </button>
-            <a href="#" className="text-sm text-manga-muted hover:text-white transition-colors px-3 py-1.5">
+            <Link to="/iniciar-sesion" className="text-sm text-manga-muted hover:text-white transition-colors px-3 py-1.5">
               Iniciar sesión
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/registrarse"
               className="text-sm font-semibold bg-manga-red hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Registrarse
-            </a>
+            </Link>
           </div>
 
           {/* Mobile actions */}
@@ -208,14 +208,14 @@ export default function Navbar() {
           <div className="md:hidden pb-4 border-t border-manga-border mt-1">
             <nav className="flex flex-col gap-1 pt-3">
               {links.map((link) => (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  to={link.href}
                   onClick={() => setMenuOpen(false)}
                   className="text-manga-muted hover:text-white hover:bg-manga-card px-3 py-2 rounded-lg transition-colors text-sm"
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
               <Link
                 to="/traductor"
@@ -226,18 +226,20 @@ export default function Navbar() {
                 Traductor de Manga
               </Link>
               <div className="flex gap-2 mt-3 px-3">
-                <a
-                  href="#"
+                <Link
+                  to="/iniciar-sesion"
+                  onClick={() => setMenuOpen(false)}
                   className="flex-1 text-center text-sm text-manga-muted border border-manga-border hover:border-manga-red px-4 py-2 rounded-lg transition-colors"
                 >
                   Iniciar sesión
-                </a>
-                <a
-                  href="#"
+                </Link>
+                <Link
+                  to="/registrarse"
+                  onClick={() => setMenuOpen(false)}
                   className="flex-1 text-center text-sm font-semibold bg-manga-red hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Registrarse
-                </a>
+                </Link>
               </div>
             </nav>
           </div>
