@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, Star, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import DbConfigBanner from '../components/DbConfigBanner';
 
 const RANK_COLORS = ['text-yellow-400', 'text-gray-400', 'text-orange-500'];
 
@@ -35,6 +36,7 @@ export default function Popular() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DbConfigBanner />
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="w-8 h-8 border-2 border-manga-red border-t-transparent rounded-full animate-spin" />

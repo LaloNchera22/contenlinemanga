@@ -3,6 +3,7 @@ import { Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { genres } from '../data/manga';
+import DbConfigBanner from '../components/DbConfigBanner';
 
 export default function Explorar() {
   const [mangas, setMangas] = useState([]);
@@ -48,6 +49,7 @@ export default function Explorar() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DbConfigBanner />
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <div className="relative flex-1">

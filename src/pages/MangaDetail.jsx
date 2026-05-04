@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Hash } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import DbConfigBanner from '../components/DbConfigBanner';
 
 export default function MangaDetail() {
   const { id } = useParams();
@@ -74,6 +75,7 @@ export default function MangaDetail() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <DbConfigBanner />
         <div className="flex flex-col sm:flex-row gap-10">
           {/* Cover — grayscale by default, full color on hover */}
           <div className="flex-shrink-0">
