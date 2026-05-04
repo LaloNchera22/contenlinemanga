@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Menu, X, BookOpen, Bell } from 'lucide-react';
+import { Search, Menu, X, BookOpen, Bell, Languages } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -109,6 +109,15 @@ export default function Navbar() {
             ))}
           </nav>
 
+          {/* Translator link */}
+          <Link
+            to="/traductor"
+            className="hidden md:flex items-center gap-1.5 text-sm font-semibold bg-manga-purple/20 hover:bg-manga-purple/30 text-manga-purple px-4 py-2 rounded-lg transition-colors border border-manga-purple/30"
+          >
+            <Languages className="w-4 h-4" />
+            Traductor
+          </Link>
+
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-3">
             {searchOpen ? (
@@ -208,6 +217,14 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
+              <Link
+                to="/traductor"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 text-manga-purple hover:bg-manga-purple/10 px-3 py-2 rounded-lg transition-colors text-sm font-medium border border-manga-purple/30 mx-0"
+              >
+                <Languages className="w-4 h-4" />
+                Traductor de Manga
+              </Link>
               <div className="flex gap-2 mt-3 px-3">
                 <a
                   href="#"
